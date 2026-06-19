@@ -1,15 +1,6 @@
-# live-migration-ext4-btrfs
+# Live migration of root mount point from ext4 to btrfs
 
-Scripts to convert a running Linux root filesystem from ext4 to btrfs,
-validated by the AI agent recovery workflow described in
-[post-ai-agent-recoverable-failures.md](https://gist.github.com/monperrus/a7aa344dc84c76e5ec569a646b31eab9).
-
-## Context
-
-The agent recovery setup in that post requires a Btrfs subvolume
-(`@agent_workflow`) so that Snapper can take pre/post snapshots around AI
-agent runs and roll them back on failure. On an existing ext4 machine the
-conversion has to happen in-place without a reinstall.
+Prototype showing how to convert a running Linux root filesystem from ext4 to btrfs.
 
 ## Files
 
@@ -52,10 +43,6 @@ Add `--keep` to leave the VM running for manual inspection:
 **Do not run this over SSH on a real machine without console or IPMI access.**
 A failed `pivot_root` or conversion step will leave the host unreachable.
 The QEMU script proves the mechanics first.
-
-On `sos-small02` (an ext4-only test host with no console access) the
-live conversion was not attempted. The safe workaround — a loopback Btrfs
-image mounted at the target path — is what `reproduce.sh` demonstrates.
 
 ## Key findings from testing on sos-small02
 
