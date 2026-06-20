@@ -45,7 +45,7 @@ mkdir -p "$RESCUE"
 mount -t tmpfs -o size=512M tmpfs "$RESCUE"
 
 # copy the binaries we need after pivot_root
-BINS=(bash sh busybox e2fsck btrfs-convert btrfs mount umount pivot_root)
+BINS=(bash sh busybox e2fsck btrfs-convert btrfs mount umount pivot_root findmnt)
 for b in "${BINS[@]}"; do
     cmd=$(command -v "$b" 2>/dev/null || true)
     [[ -z "$cmd" ]] && { echo "Missing: $b"; exit 1; }
@@ -53,12 +53,17 @@ for b in "${BINS[@]}"; do
 done
 
 # copy required shared libraries
-LIBS=$(ldd "${BINS[@]/#/$(command -v )}" 2>/dev/null | grep -oE '/[^ ]+\.so[^ ]*' | sort -u || true)
+LIBS=$(for b in "${BINS[@]}"; do
+    cmd=$(command -v "$b" 2>/dev/null) && ldd "$cmd" 2>/dev/null || true
+done | grep -oE '/[^ ]+\.so[^ ]*' | sort -u)
 for lib in $LIBS; do
     [[ -f "$lib" ]] && install -D "$lib" "$RESCUE$lib"
 done
 
 # ── Step 3: pivot_root ───────────────────────────────────────────────────────
+# On systemd systems the root and its children are MS_SHARED by default.
+# pivot_root(2) requires the parent of new_root to be MS_PRIVATE.
+mount --make-rprivate /
 mkdir -p "$RESCUE/oldroot"
 pivot_root "$RESCUE" "$RESCUE/oldroot"
 
